@@ -248,6 +248,26 @@ extension Thing {
         .ellipse(-0.22, 0.05, 0.38, 0.36, weight: 3, color: 0xFFB300),
         .ellipse(0.25, -0.3, 0.18, 0.08, turn: -20, color: 0xFFF8E1, role: .deco),
     ])
+    static let chocolate = Thing(name: "Chocolate Bar", parts: [
+        .rect(0, 0, 1.9, 0.9, corner: 0.06, weight: 1, color: 0x6D3B1F),
+        .rect(-0.71, -0.21, 0.4, 0.34, corner: 0.04, color: 0x7E4826, role: .deco),
+        .rect(-0.71, 0.21, 0.4, 0.34, corner: 0.04, color: 0x7E4826, role: .deco),
+        .rect(-0.235, -0.21, 0.4, 0.34, corner: 0.04, color: 0x7E4826, role: .deco),
+        .rect(-0.235, 0.21, 0.4, 0.34, corner: 0.04, color: 0x7E4826, role: .deco),
+        .rect(0.24, -0.21, 0.4, 0.34, corner: 0.04, color: 0x7E4826, role: .deco),
+        .rect(0.24, 0.21, 0.4, 0.34, corner: 0.04, color: 0x7E4826, role: .deco),
+        .rect(0.715, -0.21, 0.4, 0.34, corner: 0.04, color: 0x7E4826, role: .deco),
+        .rect(0.715, 0.21, 0.4, 0.34, corner: 0.04, color: 0x7E4826, role: .deco),
+    ])
+    static let cake = Thing(name: "Layer Cake", parts: [
+        .rect(0, 0.25, 1.9, 0.5, corner: 0.04, weight: 0.6, color: 0xF3D29B),
+        .rect(0, -0.15, 1.9, 0.3, corner: 0.04, weight: 0.6, color: 0x8D5A3B),
+        .rect(0, -0.38, 1.9, 0.16, corner: 0.06, weight: 1.3, color: 0xFFFFFF),
+        .ellipse(-0.75, -0.52, 0.08, 0.08, weight: 1.2, color: 0xE53935),
+        .ellipse(0.55, -0.52, 0.08, 0.08, weight: 1.2, color: 0xE53935),
+        .ellipse(0.75, -0.52, 0.08, 0.08, weight: 1.2, color: 0xE53935),
+        .rect(0, 0.05, 1.9, 0.06, color: 0xF48FB1, role: .deco),
+    ])
 }
 
 extension Level {
@@ -285,6 +305,12 @@ extension Level {
         Level(number: 31, thing: .cactus, tolerance: 1.5, turn: 15, wobble: 20, period: 2.2, tip: "The pot is heavy clay."),
         Level(number: 32, thing: .bulb, tolerance: 1.5, wobble: 12, period: 2.6, hide: .vanish, tip: "Glass is thin. The metal base is heavy."),
         Level(number: 33, thing: .egg, tolerance: 1, wobble: 12, move: 0.7, period: 2.6, hide: .silhouette, tip: "The final boss. The gold yolk is heavy!"),
+        Level(number: 34, thing: .chocolate, tolerance: 3, target: 1.0 / 3, tip: "Not half this time! Make the LEFT piece one third."),
+        Level(number: 35, thing: .cake, tolerance: 3, target: 1.0 / 4, tip: "A quarter for you. Cherries and frosting are heavy."),
+        Level(number: 36, thing: .cheese, tolerance: 3, turn: 10, target: 1.0 / 3, tip: "One third of the cheese on the left."),
+        Level(number: 37, thing: .swiss, tolerance: 2.5, wobble: 15, period: 2.8, target: 1.0 / 4, tip: "A quarter. Mind the holes!"),
+        Level(number: 38, thing: .sausage, tolerance: 3, move: 0.8, period: 3.2, target: 1.0 / 3, tip: "Fold when one third is on the left."),
+        Level(number: 39, thing: .dumbbell, tolerance: 2.5, hide: .silhouette, target: 1.0 / 4, tip: "A quarter of the weight. Remember the big plates!"),
     ]
 
     static let chapters: [(first: Int, name: String)] = [
@@ -294,5 +320,6 @@ extension Level {
         (16, "On the Move"),
         (22, "Now You See It"),
         (28, "Master Chef"),
+        (34, "Fractions"),
     ]
 }

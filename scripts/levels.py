@@ -295,11 +295,23 @@ thing("egg", "Golden Egg",
       E(-0.22, 0.05, 0.38, 0.36, 3, "FFB300"),
       deco(E(0.25, -0.3, 0.18, 0.08, 0, "FFF8E1", a=-20)))
 
+thing("chocolate", "Chocolate Bar",
+      R(0, 0, 1.9, 0.9, 1, "6D3B1F", corner=0.06),
+      *[deco(R(-0.71 + c * 0.475, -0.21 + r * 0.42, 0.4, 0.34, 0, "7E4826", corner=0.04)) for c in range(4) for r in range(2)])
+
+thing("cake", "Layer Cake",
+      R(0, 0.25, 1.9, 0.5, 0.6, "F3D29B", corner=0.04),
+      R(0, -0.15, 1.9, 0.3, 0.6, "8D5A3B", corner=0.04),
+      R(0, -0.38, 1.9, 0.16, 1.3, "FFFFFF", corner=0.06),
+      *[E(x, -0.52, 0.08, 0.08, 1.2, "E53935") for x in (-0.75, 0.55, 0.75)],
+      deco(R(0, 0.05, 1.9, 0.06, 0, "F48FB1")))
+
 # ---------------------------------------------------------------- levels
 # tol: how close to 50% you must be (in %). rot: starting turn (degrees).
 # wobble: it rocks back and forth this many degrees. move: it slides by itself
 # (in object sizes) and you can't drag it. hide: "silhouette" (colors go) or
-# "vanish" (the whole thing goes) after a few seconds.
+# "vanish" (the whole thing goes) after a few seconds. target: the share of the
+# weight the LEFT piece should get, as (top, bottom), like (1, 3) for a third.
 
 LEVELS = [
     # Easy Cuts (free)
@@ -341,10 +353,17 @@ LEVELS = [
     dict(t="cactus", tol=1.5, wobble=20, period=2.2, rot=15, tip="The pot is heavy clay."),
     dict(t="bulb", tol=1.5, hide="vanish", wobble=12, period=2.6, tip="Glass is thin. The metal base is heavy."),
     dict(t="egg", tol=1, hide="silhouette", move=0.7, period=2.6, wobble=12, tip="The final boss. The gold yolk is heavy!"),
+    # Fractions
+    dict(t="chocolate", tol=3, target=(1, 3), tip="Not half this time! Make the LEFT piece one third."),
+    dict(t="cake", tol=3, target=(1, 4), tip="A quarter for you. Cherries and frosting are heavy."),
+    dict(t="cheese", tol=3, target=(1, 3), rot=10, tip="One third of the cheese on the left."),
+    dict(t="swiss", tol=2.5, target=(1, 4), wobble=15, period=2.8, tip="A quarter. Mind the holes!"),
+    dict(t="sausage", tol=3, target=(1, 3), move=0.8, period=3.2, tip="Fold when one third is on the left."),
+    dict(t="dumbbell", tol=2.5, target=(1, 4), hide="silhouette", tip="A quarter of the weight. Remember the big plates!"),
 ]
 
 CHAPTERS = [(1, "Easy Cuts"), (4, "Kitchen Classics"), (10, "Wobbly"), (16, "On the Move"),
-            (22, "Now You See It"), (28, "Master Chef")]
+            (22, "Now You See It"), (28, "Master Chef"), (34, "Fractions")]
 
 # ---------------------------------------------------------------- weighing (same math as Thing.swift)
 
@@ -405,9 +424,9 @@ def samples(t):
     return out
 
 
-def perfect_offset(pts, angle):
+def perfect_offset(pts, angle, share=0.5):
     proj = sorted((rot(x, y, angle)[0], m) for x, y, m in pts)
-    half = sum(m for _, m in proj) / 2
+    half = sum(m for _, m in proj) * share
     run = 0
     for px, m in proj:
         run += m
@@ -466,6 +485,8 @@ def write_swift():
                 args.append(f"{label}: {num(lv[key])}")
         if "hide" in lv:
             args.append(f"hide: .{lv['hide']}")
+        if "target" in lv:
+            args.append(f"target: {lv['target'][0]}.0 / {lv['target'][1]}")
         tip = lv["tip"].replace('"', '\\"')
         args.append(f'tip: "{tip}"')
         lines.append(f"        Level({', '.join(args)}),")
@@ -498,7 +519,8 @@ def preview(path):
             wx, wy = rot(x, y, a)
             shade = min(255, int(60 + m * 40))
             d.point((ox + wx * s, oy + wy * s), fill=(shade, shade, 90))
-        best = perfect_offset(pts, a)
+        top, bottom = lv.get("target", (1, 2))
+        best = perfect_offset(pts, a, top / bottom)
         xs = [rot(x, y, a)[0] for x, y, _ in pts]
         box_mid = (min(xs) + max(xs)) / 2
         cut = ox - best * s

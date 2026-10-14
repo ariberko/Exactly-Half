@@ -11,11 +11,13 @@ Heavy parts count more than big parts: a hammer's steel head beats its long wood
 
 ## Levels
 
-- **3 free levels** (Easy Cuts), then **30 more** with the Full Game:
+- **3 free levels** (Easy Cuts), then **36 more** with the Full Game:
   Kitchen Classics, Wobbly (it rocks while you aim), On the Move (it slides by itself, so you fold at the right moment),
-  Now You See It (the colors or the whole object vanish after 3 seconds) and Master Chef.
+  Now You See It (the colors or the whole object vanish after 3 seconds), Master Chef and Fractions (cut off exactly 1/3 or 1/4).
 - Up to 3 stars per level. Each level asks you to get within a set % of 50/50.
 - **Daily Cut** (free): a new mystery object every day, with a streak.
+- **Party** (free): 2-4 players pass the phone and cut the same objects. The smallest total miss wins.
+- **Sounds** made in code (a different chop for each blade) and a **Share** button that makes a picture of your cut.
 - **Blade Pack**: Laser, Katana, Chainsaw and Plasma cut lines.
 - No fold? Settings has a **CUT button** (on by default on iPad), and a switch that turns the cut line if it doesn't sit on your hinge.
 
@@ -33,7 +35,7 @@ Make these in App Store Connect with the same IDs:
 
 | Product ID | Type | What |
 | --- | --- | --- |
-| `com.ariberkowitz.exactlyhalf.fullgame` | Non-consumable | Levels 4-33 |
+| `com.ariberkowitz.exactlyhalf.fullgame` | Non-consumable | Levels 4-39 |
 | `com.ariberkowitz.exactlyhalf.blades` | Non-consumable | Blade Pack |
 | `com.ariberkowitz.exactlyhalf.all` | Non-consumable | All Access (both) |
 | `com.ariberkowitz.exactlyhalf.tip.small` | Consumable | Small tip |

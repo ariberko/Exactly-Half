@@ -21,6 +21,16 @@ struct PlayView: View {
             let frame = FoldFrame(screen: geo.size, turned: game.turnFold)
             ZStack {
                 switch game.phase {
+                case .handOff:
+                    if let party = game.party {
+                        HandOffView(game: game, party: party)
+                    }
+                case .partyOver:
+                    if let party = game.party {
+                        PartyOverView(game: game, party: party)
+                            .padding(.top, max(geo.safeAreaInsets.top, 12))
+                            .padding(.bottom, max(geo.safeAreaInsets.bottom, 12))
+                    }
                 case .waitingToOpen:
                     openPrompt
                         .padding(.top, geo.safeAreaInsets.top)
@@ -148,9 +158,15 @@ struct PlayView: View {
             HStack(alignment: .top, spacing: 12) {
                 backButton
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(level.isDaily ? "DAILY CUT" : "LEVEL \(level.number)")
-                        .font(Theme.title(13))
-                        .foregroundStyle(.white.opacity(0.6))
+                    if let party = game.party {
+                        Text("PLAYER \(party.turn + 1) · ROUND \(party.round + 1)/\(party.levels.count)")
+                            .font(Theme.title(13))
+                            .foregroundStyle(Party.colors[party.turn])
+                    } else {
+                        Text(level.isDaily ? "DAILY CUT" : "LEVEL \(level.number)")
+                            .font(Theme.title(13))
+                            .foregroundStyle(.white.opacity(0.6))
+                    }
                     Text(level.name)
                         .font(Theme.title(20))
                         .foregroundStyle(.white)
@@ -171,6 +187,9 @@ struct PlayView: View {
                 HStack(spacing: 8) {
                     Image(systemName: level.move > 0 ? "timer" : "hand.draw")
                     Text(level.move > 0 ? "Fold your phone at the right moment" : "Drag it, then fold your phone to cut")
+                    if !level.isHalf {
+                        Text("· left gets \(level.targetName)").foregroundStyle(Theme.halves[0])
+                    }
                 }
                 .font(Theme.body(14, weight: .bold))
                 .foregroundStyle(.white)
@@ -236,7 +255,7 @@ struct PlayView: View {
                 .font(Theme.title(26))
                 .foregroundStyle(.white)
                 .multilineTextAlignment(.center)
-            Text("\(game.level.isDaily ? "Daily Cut" : "Level \(game.level.number)"): \(game.level.name)")
+            Text("\(game.level.isDaily ? "Daily Cut" : game.level.number == 0 ? "Mystery" : "Level \(game.level.number)"): \(game.level.name)")
                 .font(Theme.title(17))
                 .foregroundStyle(Theme.halves[1])
             Text("The hinge is your knife. Line the object up on the open screen, then fold to cut it in half.")
@@ -278,7 +297,7 @@ struct ChopView: View {
                         .shadow(color: blade.color, radius: 16)
                         .scaleEffect(1 + 0.3 * max(0, 1 - t / 0.3))
                     if folded {
-                        Label("Open your phone to weigh the halves", systemImage: "scalemass")
+                        Label("Open your phone to weigh the pieces", systemImage: "scalemass")
                             .font(Theme.body(16, weight: .bold))
                             .foregroundStyle(.white.opacity(0.8))
                             .multilineTextAlignment(.center)
@@ -287,5 +306,6 @@ struct ChopView: View {
                 }
             }
         }
+        .onAppear { Sounds.play(blade.sound) }
     }
 }

@@ -10,6 +10,7 @@ struct ResultView: View {
 
     @EnvironmentObject private var store: Store
     @State private var settled = false
+    @State private var shareImage: Image?
 
     private static let slide = 0.6
     private static let weigh = 1.2
@@ -34,17 +35,26 @@ struct ResultView: View {
             .animation(.easeOut(duration: 0.3), value: t >= Self.done)
         }
         .task {
-            try? await Task.sleep(for: .seconds(Self.done))
-            if cut.stars > 0 { Haptics.win() } else { Haptics.ouch() }
+            try? await Task.sleep(for: .seconds(Self.slide))
+            Sounds.play(.thump)
+            try? await Task.sleep(for: .seconds(Self.done - Self.slide))
+            if cut.stars > 0 {
+                Haptics.win()
+                Sounds.play(.win)
+            } else {
+                Haptics.ouch()
+                Sounds.play(.lose)
+            }
             try? await Task.sleep(for: .seconds(0.5))
             settled = true
+            shareImage = ShareCard.render(level: game.level, cut: cut, blade: blade)
         }
     }
 
     // MARK: - Words
 
     private var message: String {
-        if cut.error < 0.05 { return "EXACTLY HALF!" }
+        if cut.error < 0.05 { return game.level.isHalf ? "EXACTLY HALF!" : "EXACTLY \(game.level.targetName)!" }
         switch cut.stars {
         case 3: return "Razor sharp!"
         case 2: return "Nice cut!"
@@ -55,6 +65,11 @@ struct ResultView: View {
 
     private func header(shown: Bool) -> some View {
         VStack(spacing: 6) {
+            if let party = game.party {
+                Text("PLAYER \(party.turn + 1)")
+                    .font(Theme.title(15))
+                    .foregroundStyle(Party.colors[party.turn])
+            }
             Text(message)
                 .font(Theme.title(34))
                 .foregroundStyle(cut.stars > 0 ? Theme.gold : .white)
@@ -68,6 +83,11 @@ struct ResultView: View {
                 .font(Theme.body(14, weight: .semibold))
                 .foregroundStyle(.white.opacity(0.7))
                 .multilineTextAlignment(.center)
+            if !game.level.isHalf {
+                Text("Goal: \(Self.precise(cut.target * 100)) | \(Self.precise(100 - cut.target * 100))")
+                    .font(Theme.body(13, weight: .bold))
+                    .foregroundStyle(Theme.good)
+            }
         }
         .opacity(shown ? 1 : 0)
     }
@@ -89,17 +109,39 @@ struct ResultView: View {
         .frame(maxWidth: 420)
     }
 
+    @ViewBuilder
     private var footer: some View {
-        VStack(spacing: 12) {
-            PerfectCutView(thing: game.level.thing, cut: cut, blade: blade)
-                .frame(width: 200, height: 70)
-            HStack(spacing: 12) {
-                NeonButton(title: "RETRY", color: .white.opacity(0.85), small: true) { game.retry() }
-                nextButton
+        if let party = game.party {
+            VStack(spacing: 12) {
+                // Later players would see the answer, so it waits for the end of the round.
+                if party.isLastTurnOfRound {
+                    PerfectCutView(thing: game.level.thing, cut: cut, blade: blade)
+                        .frame(width: 200, height: 70)
+                }
+                NeonButton(title: party.isLastTurn ? "SEE WINNER" : party.isLastTurnOfRound ? "NEXT ROUND" : "NEXT PLAYER",
+                           color: Party.colors[(party.turn + 1) % party.players]) { game.nextTurn() }
             }
-            Button(game.level.isDaily ? "Menu" : "All levels") { game.leave() }
+        } else {
+            VStack(spacing: 12) {
+                PerfectCutView(thing: game.level.thing, cut: cut, blade: blade)
+                    .frame(width: 200, height: 70)
+                HStack(spacing: 12) {
+                    NeonButton(title: "RETRY", color: .white.opacity(0.85), small: true) { game.retry() }
+                    nextButton
+                }
+                HStack(spacing: 24) {
+                    Button(game.level.isDaily ? "Menu" : "All levels") { game.leave() }
+                    if let shareImage {
+                        ShareLink(item: shareImage,
+                                  message: Text("Can you cut it closer? Exactly Half for iPhone Duo"),
+                                  preview: SharePreview("My Exactly Half cut", image: shareImage)) {
+                            Label("Share", systemImage: "square.and.arrow.up")
+                        }
+                    }
+                }
                 .font(Theme.body(15, weight: .semibold))
                 .foregroundStyle(.white.opacity(0.7))
+            }
         }
     }
 
@@ -109,7 +151,7 @@ struct ResultView: View {
             if next.isFree || store.owns(StoreIDs.fullGame) {
                 NeonButton(title: "NEXT", small: true) { game.play(next) }
             } else {
-                NeonButton(title: "UNLOCK 30 MORE", color: Theme.gold, small: true) { openShop() }
+                NeonButton(title: "UNLOCK \(Level.all.count - Level.freeCount) MORE", color: Theme.gold, small: true) { openShop() }
             }
         } else if cut.stars > 0 && !game.level.isDaily {
             NeonButton(title: "YOU WON!", color: Theme.gold, small: true) { game.leave() }
@@ -247,5 +289,55 @@ struct PerfectCutView: View {
         path.move(to: CGPoint(x: x, y: 0))
         path.addLine(to: CGPoint(x: x, y: height))
         context.stroke(path, with: .color(color), style: StrokeStyle(lineWidth: 2, dash: dashed ? [4, 3] : []))
+    }
+}
+
+/// A square picture of your cut, to send to friends. It shows your line, not the perfect one.
+struct ShareCard: View {
+    let level: Level
+    let cut: Cut
+    let blade: Blade
+
+    @MainActor
+    static func render(level: Level, cut: Cut, blade: Blade) -> Image? {
+        let renderer = ImageRenderer(content: ShareCard(level: level, cut: cut, blade: blade))
+        renderer.scale = 3
+        return renderer.uiImage.map { Image(uiImage: $0) }
+    }
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Logo(size: 40)
+            Text(level.isDaily ? "Daily Cut · \(level.name)" : level.number == 0 ? level.name : "Level \(level.number) · \(level.name)")
+                .font(Theme.title(16))
+                .foregroundStyle(.white.opacity(0.7))
+            Canvas { context, size in
+                let reach = cut.reach
+                let wide = CGFloat(max(0.1, reach.right - reach.left))
+                let tall = CGFloat(max(0.1, reach.bottom - reach.top))
+                let s = min(size.width / wide, size.height / tall) * 0.9
+                let objectX = size.width / 2 - CGFloat(reach.left + reach.right) / 2 * s
+                let objectY = size.height / 2 - CGFloat(reach.top + reach.bottom) / 2 * s
+                let transform = CGAffineTransform(scaleX: s, y: s)
+                    .concatenating(CGAffineTransform(rotationAngle: cut.turn * .pi / 180))
+                    .concatenating(CGAffineTransform(translationX: objectX, y: objectY))
+                level.thing.draw(in: context, transform: transform)
+                blade.draw(in: context, x: objectX - cut.offset.x * s, height: size.height)
+            }
+            .frame(height: 130)
+            HStack(spacing: 14) {
+                Text(ResultView.precise(cut.leftShare * 100)).foregroundStyle(Theme.halves[0])
+                Text("|").foregroundStyle(.white.opacity(0.3))
+                Text(ResultView.precise(100 - cut.leftShare * 100)).foregroundStyle(Theme.halves[1])
+            }
+            .font(Theme.title(32))
+            StarsView(count: cut.stars, size: 22)
+            Text("Can you cut it closer?")
+                .font(Theme.title(15))
+                .foregroundStyle(Theme.gold)
+        }
+        .padding(24)
+        .frame(width: 360, height: 400)
+        .background(Theme.background)
     }
 }

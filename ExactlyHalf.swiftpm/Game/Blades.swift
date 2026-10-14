@@ -26,6 +26,16 @@ struct Blade: Identifiable, Equatable {
 
     static let all = [classic, laser, katana, chainsaw, plasma]
 
+    /// The chop sound.
+    var sound: Sound {
+        switch id {
+        case Blade.laser.id, Blade.plasma.id: return .zap
+        case Blade.katana.id: return .shing
+        case Blade.chainsaw.id: return .buzz
+        default: return .swish
+        }
+    }
+
     static func with(id: String) -> Blade {
         all.first { $0.id == id } ?? .classic
     }

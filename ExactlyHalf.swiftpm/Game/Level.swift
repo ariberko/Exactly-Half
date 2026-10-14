@@ -18,6 +18,8 @@ struct Level: Identifiable {
     /// Seconds for one wobble or slide.
     var period: Double = 3
     var hide: Hide = .none
+    /// The share of the weight the LEFT piece should get. Half, unless it's a Fractions level.
+    var target: Double = 0.5
     let tip: String
     var isDaily = false
 
@@ -34,7 +36,7 @@ struct Level: Identifiable {
         let turnNow = turn + wobble * sin(wave * 0.83)
         guard move > 0 else { return (dragged, turnNow) }
         // Swings across the perfect spot, fastest right when it's there.
-        let center = thing.perfectOffset(turn: turn)
+        let center = thing.perfectOffset(turn: turn, share: target)
         return (CGPoint(x: center + move * sin(wave + swingStart), y: 0), turnNow)
     }
 
@@ -46,8 +48,21 @@ struct Level: Identifiable {
         return 0
     }
 
+    var isHalf: Bool { abs(target - 0.5) < 0.0001 }
+
+    /// "1/3" for a third, "1/2" for a half.
+    var targetName: String {
+        for bottom in 2...8 {
+            for top in 1..<bottom where abs(target - Double(top) / Double(bottom)) < 0.0001 {
+                return "\(top)/\(bottom)"
+            }
+        }
+        return String(format: "%.0f%%", target * 100)
+    }
+
     var modifiers: [String] {
         var list: [String] = []
+        if !isHalf { list.append("Left = \(targetName)") }
         if wobble > 0 { list.append("Wobbly") }
         if move > 0 { list.append("Moving") }
         switch hide {
@@ -72,7 +87,14 @@ struct Level: Identifiable {
 extension Level {
     /// Today's mystery object. Everyone gets the same one on the same day.
     static func daily(for date: Date = Date()) -> Level {
-        var rng = SeededRandom(seed: UInt64(DayKey.from(date)))
+        var level = mystery(seed: UInt64(DayKey.from(date)))
+        level.isDaily = true
+        return level
+    }
+
+    /// A lumpy mystery object made from a seed.
+    static func mystery(seed: UInt64) -> Level {
+        var rng = SeededRandom(seed: seed)
         let names = ["Moon Cheese", "Space Rock", "Mystery Jelly", "Alien Cookie", "Lava Blob",
                      "Wobble Pie", "Dino Egg", "Cloud Cake", "Fudge Rock", "Comet Candy"]
         let palettes: [(UInt32, UInt32)] = [(0xFFB74D, 0x8D4E1A), (0x81D4FA, 0x1565C0), (0xCE93D8, 0x6A1B9A),
@@ -102,8 +124,7 @@ extension Level {
         }
 
         var level = Level(number: 0, thing: Thing(name: names[rng.next(names.count)], parts: parts),
-                          tolerance: 2, turn: (rng.unit() - 0.5) * 40, tip: "A new mystery every day. The dark lumps are heavy!")
-        level.isDaily = true
+                          tolerance: 2, turn: (rng.unit() - 0.5) * 40, tip: "A mystery object. The dark lumps are heavy!")
         switch rng.next(4) {
         case 0: level.wobble = 10 + rng.unit() * 10
         case 1:

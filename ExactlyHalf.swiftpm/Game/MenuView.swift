@@ -9,6 +9,7 @@ struct MenuView: View {
 
     @EnvironmentObject private var store: Store
     @EnvironmentObject private var scorebook: Scorebook
+    @State private var showingParty = false
 
     var body: some View {
         GeometryReader { geo in
@@ -27,7 +28,10 @@ struct MenuView: View {
                     .background(.white.opacity(0.08), in: Capsule())
 
                     NeonButton(title: "PLAY") { playNext() }
-                    NeonButton(title: "LEVELS", color: Theme.halves[1], small: true) { game.screen = .levels }
+                    HStack(spacing: 12) {
+                        NeonButton(title: "LEVELS", color: Theme.halves[1], small: true) { game.screen = .levels }
+                        NeonButton(title: "PARTY", color: Theme.gold, small: true) { showingParty = true }
+                    }
 
                     dailyCard
 
@@ -47,6 +51,9 @@ struct MenuView: View {
             .scrollBounceBehavior(.basedOnSize)
         }
         .onAppear { scorebook.refreshDaily() }
+        .sheet(isPresented: $showingParty) {
+            PartySetupView(game: game)
+        }
     }
 
     private func playNext() {
@@ -236,10 +243,16 @@ struct LevelMapView: View {
 struct SettingsView: View {
     @ObservedObject var game: Game
     @Environment(\.dismiss) private var dismiss
+    @AppStorage("sounds") private var sounds = true
 
     var body: some View {
         NavigationStack {
             Form {
+                Section {
+                    Toggle("Sounds", isOn: $sounds)
+                } footer: {
+                    Text("The silent switch also mutes them.")
+                }
                 Section {
                     Toggle("Show a CUT button", isOn: $game.cutButton)
                 } footer: {

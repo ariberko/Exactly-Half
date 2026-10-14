@@ -20,7 +20,7 @@ struct ShopView: View {
 
                     section("MORE GAME") {
                         unlockRow(id: StoreIDs.fullGame, title: "Full Game",
-                                  detail: "\(Level.all.count - Level.freeCount) more levels: wobbly, moving and vanishing objects, up to Master Chef.",
+                                  detail: "\(Level.all.count - Level.freeCount) more levels: wobbly, moving and vanishing objects, Master Chef and Fractions.",
                                   symbol: "square.grid.3x3.fill")
                     }
 

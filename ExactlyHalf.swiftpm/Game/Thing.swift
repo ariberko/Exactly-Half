@@ -173,25 +173,27 @@ final class Thing {
         return grains.total > 0 ? left / grains.total : 0.5
     }
 
-    private var perfectCache: [Double: Double] = [:]
+    private var perfectCache: [String: Double] = [:]
 
-    /// The offset that cuts the object into two exactly equal halves.
-    func perfectOffset(turn: Double) -> Double {
-        if let known = perfectCache[turn] { return known }
-        let offset = findPerfectOffset(turn: turn)
+    /// The offset that leaves exactly `share` of the weight left of the cut
+    /// (0.5 is two equal halves).
+    func perfectOffset(turn: Double, share: Double = 0.5) -> Double {
+        let key = "\(turn)|\(share)"
+        if let known = perfectCache[key] { return known }
+        let offset = findPerfectOffset(turn: turn, share: share)
         if perfectCache.count > 64 { perfectCache.removeAll() }
-        perfectCache[turn] = offset
+        perfectCache[key] = offset
         return offset
     }
 
-    private func findPerfectOffset(turn: Double) -> Double {
+    private func findPerfectOffset(turn: Double, share: Double) -> Double {
         let a = turn * .pi / 180
         let c = cos(a), s = sin(a)
         let order = grains.mass.indices.map { (across($0, cos: c, sin: s), grains.mass[$0]) }.sorted { $0.0 < $1.0 }
         var run = 0.0
         for (x, mass) in order {
             run += mass
-            if run >= grains.total / 2 { return -x }
+            if run >= grains.total * share { return -x }
         }
         return 0
     }
